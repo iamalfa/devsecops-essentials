@@ -7,8 +7,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  security-audit:
-    name: Security Auditing & Container Build
+  static-security-audit:
+    name: SAST & Secret Audit
     runs-on: ubuntu-latest
 
     steps:
@@ -22,7 +22,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run Trivy Static Code & Config Scan
+      - name: Run ShellCheck on Automation Scripts
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './bash-automation'
+
+      - name: Run Semgrep SAST Audit
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+
+  container-security-audit:
+    name: Container Build & Vulnerability Scan
+    runs-on: ubuntu-latest
+    needs: static-security-audit
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy Static Config Scan
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'config'
