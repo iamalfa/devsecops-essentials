@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  web:
+    image: devops-custom-app:v2
+    container_name: compose-web-app
+    ports:
+      - "8085:8080"
+    networks:
+      - secure-network
+    restart: always
+
+  cache:
+    image: redis:alpine
+    container_name: compose-redis-db
+    # Redis port host par expose NAHI kiya (Security Best Practice)
+    networks:
+      - secure-network
+    restart: always
+
+networks:
+  secure-network:
+    driver: bridge
