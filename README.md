@@ -1,4 +1,7 @@
+
 # DevSecOps Practice & Container Hardening
+
+![DevSecOps CI](https://github.com/iamalfa/devsecops-essentials/actions/workflows/devsecops-ci.yml/badge.svg)
 
 A hands-on repository demonstrating core automation scripting, hardened container architecture, and security scanning.
 
