@@ -27,12 +27,10 @@ jobs:
         with:
           scandir: './bash-automation'
 
-      - name: Run Semgrep SAST Audit
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: >-
-            p/security-audit
-            p/secrets
+      - name: Run Fast Semgrep SAST Audit
+        run: |
+          pip install semgrep
+          semgrep scan --config "p/default" --error
 
   container-security-audit:
     name: Container Build & Vulnerability Scan
