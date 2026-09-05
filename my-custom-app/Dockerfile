@@ -1,20 +1,18 @@
-FROM nginx:alpine
+FROM nginxinc/nginx-unprivileged:alpine
 
-# Custom files copy karein
+# Apply latest security patches to OS packages at build time
+USER root
+RUN apk update && apk upgrade --no-cache
+
+# Custom static files copy karein
 COPY index.html /usr/share/nginx/html/index.html
 
-# Nginx ko non-root port 8080 par sunne ke liye configure karein
-# (Linux me 1024 se neeche ke ports bind karne ke liye root chahiye hota hai)
-RUN sed -i 's/listen       80;/listen       8080;/' /etc/nginx/conf.d/default.conf
+# Ensure proper permissions
+RUN chown -R 101:101 /usr/share/nginx/html
 
-# Nginx cache aur PID files ki permissions non-root user 'nginx' ko dein
-RUN touch /var/run/nginx.pid && \
-    chown -R nginx:nginx /var/run/nginx.pid /var/cache/nginx /var/log/nginx /usr/share/nginx/html
+# Switch back to unprivileged user (UID 101)
+USER 101
 
-# SECURITY FIX: Switch to non-root unprivileged user
-USER nginx
-
-# Hardened port
 EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]
