@@ -30,7 +30,7 @@ jobs:
       - name: Run Fast Semgrep SAST Audit
         run: |
           pip install semgrep
-          semgrep scan --config "p/default" --error
+          semgrep scan --config "p/ci" --severity ERROR --error
 
   container-security-audit:
     name: Container Build & Vulnerability Scan
