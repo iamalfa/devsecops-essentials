@@ -1,30 +1,37 @@
-# Enterprise DevSecOps CI/CD Pipeline & Automated Security Governance
+# Enterprise DevSecOps CI/CD Pipeline & Observability Stack
 
 [![DevSecOps CI/CD Pipeline](https://github.com/iamalfa/devsecops-essentials/actions/workflows/devsecops-ci.yml/badge.svg)](https://github.com/iamalfa/devsecops-essentials/actions/workflows/devsecops-ci.yml)
 [![Docker Image](https://img.shields.io/badge/Registry-GHCR-blue?logo=github)](https://github.com/iamalfa/devsecops-essentials/pkgs/container/devsecops-custom-app)
 [![Security Gates](https://img.shields.io/badge/Security-Shift--Left-green?logo=shield)](https://github.com/iamalfa/devsecops-essentials)
+[![Observability](https://img.shields.io/badge/Telemetry-Prometheus%20%7C%20Grafana-orange?logo=grafana)](https://github.com/iamalfa/devsecops-essentials)
 
-A production-grade, end-to-end DevSecOps pipeline demonstrating automated Shift-Left security controls, static analysis, vulnerability scanning, continuous delivery, and runtime staging verification.
+A production-grade DevSecOps pipeline and runtime observability architecture demonstrating automated Shift-Left security governance, vulnerability scanning, automated artifact release, and full-stack system telemetry.
 
 ---
 
-### Pipeline Workflow
+### End-to-End Pipeline & Telemetry Flow
 
 1. **Commit & Static Security Audit (SAST)**
-   * **Gitleaks:** Scans git history and commits for secrets, tokens, and credentials.
-   * **ShellCheck:** Lints Bash automation scripts for shell safety and best practices.
-   * **Semgrep:** Fast static analysis scanning for misconfigurations and vulnerabilities.
+   * **Gitleaks:** Scans git commits and history for hardcoded secrets and credentials.
+   * **ShellCheck:** Lints Bash automation scripts for POSIX compliance and shell execution safety.
+   * **Semgrep:** Enforces fast static application security rules (zero error bypass).
 
 2. **Container Security & Vulnerability Gate**
-   * **Trivy (IaC & Config):** Validates Dockerfile security baselines.
-   * **Hardened Docker Build:** Builds unprivileged Alpine container (Port 8080).
-   * **Trivy (Image Scan):** Enforces security gating by failing pipeline on CRITICAL CVEs.
-   * **GHCR Publishing:** Automated release to GitHub Container Registry upon passing gates.
+   * **Trivy (IaC & Config):** Validates Dockerfile misconfigurations and security baselines.
+   * **Hardened Docker Build:** Multi-stage build producing an unprivileged Alpine container (Port 8080).
+   * **Trivy (Image Scan):** Enforces automated build failure on CRITICAL CVEs.
+   * **GHCR Publishing:** Automates release to GitHub Container Registry upon passing checks.
 
 3. **Runtime Staging & Verification**
-   * **Staging Deployment:** Ephemeral deployment pulling verified artifact from GHCR.
-   * **Automated Smoke Test:** Health probe executing HTTP status checks (200 OK).
-   * **Teardown:** Clean automated teardown of staging resources.
+   * **Staging Deployment:** Deploys ephemeral container directly from GHCR.
+   * **Automated Smoke Test:** Runs health probe verifying `200 OK` status before pipeline success.
+   * **Teardown:** Clean automated teardown of staging test instances.
+
+4. **Runtime Telemetry & Observability**
+   * **Prometheus:** Time-series metric collection engine scraping target endpoints.
+   * **Node Exporter:** Real-time host metrics extraction (CPU, Memory, Disk, Network).
+   * **Blackbox Exporter:** Synthetic HTTP health probe verifying web-app availability (`probe_success`).
+   * **Grafana:** Visual dashboards for live metric analytics and infrastructure health tracking.
 
 ---
 
@@ -32,46 +39,61 @@ A production-grade, end-to-end DevSecOps pipeline demonstrating automated Shift-
 
 | Stage | Security Control | Tool | Purpose / Policy Enforced |
 | :--- | :--- | :--- | :--- |
-| Commit Audit | Secret Leak Detection | Gitleaks | Blocks exposed API tokens, private keys, and environment variables. |
-| Linting | Script Reliability | ShellCheck | Enforces POSIX compliance, quoting, and safe Bash execution patterns. |
-| SAST | Static Analysis | Semgrep | Scans application files for dangerous patterns and insecure primitives. |
-| IaC Hardening | Config Audit | Trivy (Config) | Verifies baseline Dockerfile and deployment configurations. |
-| Vulnerability | Container Scanning | Trivy (Image) | Gates container promotion by failing pipeline on CRITICAL CVEs. |
-| Delivery | Artifact Security | GHCR | Immutable container publishing tied to commit SHA and latest tag. |
-| Runtime | Smoke & Health Probe | Curl / Docker | Validates non-root listener health (Port 8080) in isolated staging. |
-
----
-
-### Container Hardening Highlights
-
-* **Unprivileged Execution:** Runs under unprivileged user context (`UID 101`) rather than `root`, preventing container escape.
-* **Minimal Base Distro:** Implemented on Alpine Linux base to minimize attack surface.
-* **Port Isolation:** High-numbered port binding (`8080`) complying with non-root security standards.
-* **Automated Patching:** Layered package upgrades applied during image build to resolve base image vulnerabilities.
+| Commit Audit | Secret Leak Detection | Gitleaks | Blocks exposed API keys, private certs, and credentials. |
+| Linting | Script Reliability | ShellCheck | Enforces safe quoting and POSIX standards on shell automation. |
+| SAST | Static Analysis | Semgrep | Scans application code for dangerous patterns and insecure primitives. |
+| IaC Hardening | Config Audit | Trivy (Config) | Audits Dockerfile instructions and baseline container security. |
+| Vulnerability | Container Scanning | Trivy (Image) | Blocks artifact release on discovered CRITICAL CVEs. |
+| Delivery | Artifact Security | GHCR | Secure immutable container registry hosting release images. |
+| Staging Test | Smoke Probe | Curl / Docker | Validates non-root listener health in isolated staging. |
+| Telemetry | Metrics & Health | Prometheus / Grafana | Real-time synthetic uptime probes and system metric dashboards. |
 
 ---
 
 ### Repository Structure
+
 ```text
 .
 ├── .github/
 │   └── workflows/
-│       └── devsecops-ci.yml
+│       └── devsecops-ci.yml      # 3-Stage CI/CD GitHub Actions Pipeline
 ├── bash-automation/
-│   ├── log_analyzer.sh
-│   └── system_health.sh
+│   ├── log_analyzer.sh           # SSH brute-force & log analysis utility
+│   └── system_health.sh          # Server performance & threshold monitor
+├── monitoring/
+│   └── prometheus/
+│       └── prometheus.yml        # Telemetry & blackbox probe configurations
 ├── my-custom-app/
-│   ├── Dockerfile
-│   └── index.html
-└── README.md
+│   ├── Dockerfile                # Hardened non-root unprivileged container
+│   └── index.html                # Lightweight web asset
+├── docker-compose.yml            # Multi-container observability stack
+└── README.md                     # Technical architecture documentation
 ```
 
-Quick Start (Local Run)
+### Quick Start (Local Deployment)
 
-Pull and run the verified hardened container directly from the registry:
+Clone the repository and spin up the complete application and observability stack:
 
-docker pull ghcr.io/iamalfa/devsecops-custom-app:latest
+```bash
+# Clone the repository
+git clone https://github.com/iamalfa/devsecops-essentials.git
+cd devsecops-essentials
 
-docker run -d --name devsecops-app -p 8080:8080 ghcr.io/iamalfa/devsecops-custom-app:latest
+# Launch complete stack (Web App, Prometheus, Exporters, Grafana)
+docker compose up -d
 
-curl -I http://localhost:8080
+# Verify running containers
+docker ps
+
+
+Access Endpoints:
+
+    Web Application: http://localhost:8080
+
+    Prometheus UI: http://localhost:9090
+
+    Grafana Dashboards: http://localhost:3000 (User: admin | Pass: admin)
+
+    Node Exporter Metrics: http://localhost:9100/metrics
+
+    Blackbox Exporter: http://localhost:9115
