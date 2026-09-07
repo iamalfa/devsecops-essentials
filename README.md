@@ -1,23 +1,78 @@
+# Enterprise DevSecOps CI/CD Pipeline & Automated Security Governance
 
-# DevSecOps Practice & Container Hardening
+[![DevSecOps CI/CD Pipeline](https://github.com/iamalfa/devsecops-essentials/actions/workflows/devsecops-ci.yml/badge.svg)](https://github.com/iamalfa/devsecops-essentials/actions/workflows/devsecops-ci.yml)
+[![Docker Image](https://img.shields.io/badge/Registry-GHCR-blue?logo=github)](https://github.com/iamalfa/devsecops-essentials/pkgs/container/devsecops-custom-app)
+[![Security Gates](https://img.shields.io/badge/Security-Shift--Left-green?logo=shield)](https://github.com/iamalfa/devsecops-essentials)
 
-![DevSecOps CI](https://github.com/iamalfa/devsecops-essentials/actions/workflows/devsecops-ci.yml/badge.svg)
+A production-grade, end-to-end DevSecOps pipeline demonstrating automated Shift-Left security controls, static analysis, vulnerability scanning, continuous delivery, and runtime staging verification.
 
-A hands-on repository demonstrating core automation scripting, hardened container architecture, and security scanning.
+---
 
-## Repository Structure
+## Architecture Overview
 
-- **bash-automation/**
-  - `sys_monitor.sh`: System health (RAM, disk, uptime) check
-  - `service_checker.sh`: Dynamic service validator with exit codes
-  - `multi_check.sh`: Automated multi-service auditor
-  - `log_analyzer.sh`: SSH brute-force threat detection using awk/grep
-- **my-custom-app/**
-  - `Dockerfile`: Security-hardened non-root unprivileged Nginx image
-  - `docker-compose.yml`: Multi-tier stack with isolated private bridge network
-  - `index.html`: Custom web portal template
+[ Developer Push ]
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Static Security & SAST Audit                             │
+│    ├── Gitleaks     : Hardcoded Secret & Token Detection    │
+│    ├── ShellCheck   : Static Shell Script Quality & Linting │
+│    └── Semgrep      : SAST Rule Enforcement (Zero Bypass)   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ (Pass)
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. Container Hardening & CVE Audit                          │
+│    ├── Trivy Config : IaC & Dockerfile Hardening Checks     │
+│    ├── Docker Build : Multi-tier Non-Root Container         │
+│    ├── Trivy Image  : OS/Lib Vulnerability Scan (CRITICAL=1)│
+│    └── GHCR Push    : Publish Scanned Container Image       │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ (Pass)
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 3. Automated Staging Smoke Testing                          │
+│    ├── Pull Image   : Fetch verified package from GHCR      │
+│    ├── Spin Up      : Run unprivileged container (:8080)    │
+│    ├── Health Probe : Automated HTTP curl status code check │
+│    └── Tear Down    : Ephemeral environment cleanup         │
+└─────────────────────────────────────────────────────────────┘
 
-## Key Security Implementations
-- **Non-Root Execution:** Hardened container user context to unprivileged `nginx` user (preventing container breakout risks).
-- **Vulnerability Scanning:** Audited via Aquasec Trivy (0 High/Critical vulnerabilities).
-- **Network Isolation:** Redis database isolated from public exposure using internal Docker bridge networks.
+
+Container Hardening Highlights
+
+    Unprivileged Execution: Runs under custom unprivileged user context (UID 101) rather than root, mitigating container breakout risks.
+
+    Minimal Base Distro: Implemented on Alpine Linux base to minimize attack surface and reduce package dependencies.
+
+    Port Restriction: High-numbered port binding (8080) to comply with non-root Linux networking restrictions.
+
+    Automated Upgrades: Built-in package patching layer to mitigate discovered base image CVEs during image creation.
+
+
+Repository Structure
+
+├── .github/
+│   └── workflows/
+│       └── devsecops-ci.yml      # Multi-stage CI/CD workflow
+├── bash-automation/
+│   ├── log_analyzer.sh           # System auth log & brute-force parser
+│   └── system_health.sh          # System metrics monitor (CPU, RAM, Disk)
+├── my-custom-app/
+│   ├── Dockerfile                # Hardened, non-root Nginx setup
+│   └── index.html                # Deployed lightweight web asset
+└── README.md                     # Technical architecture documentation
+
+
+Quick Start (Local Run)
+
+To run the hardened, pipeline-verified container locally from the registry:
+
+# Pull image from GitHub Container Registry
+docker pull ghcr.io/iamalfa/devsecops-custom-app:latest
+
+# Run on unprivileged port 8080
+docker run -d --name devsecops-app -p 8080:8080 ghcr.io/iamalfa/devsecops-custom-app:latest
+
+# Test endpoint health
+curl -I http://localhost:8080
