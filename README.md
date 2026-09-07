@@ -8,71 +8,70 @@ A production-grade, end-to-end DevSecOps pipeline demonstrating automated Shift-
 
 ---
 
-## Architecture Overview
+### Pipeline Workflow
 
-[ Developer Push ]
-       │
-       ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 1. Static Security & SAST Audit                             │
-│    ├── Gitleaks     : Hardcoded Secret & Token Detection    │
-│    ├── ShellCheck   : Static Shell Script Quality & Linting │
-│    └── Semgrep      : SAST Rule Enforcement (Zero Bypass)   │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ (Pass)
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 2. Container Hardening & CVE Audit                          │
-│    ├── Trivy Config : IaC & Dockerfile Hardening Checks     │
-│    ├── Docker Build : Multi-tier Non-Root Container         │
-│    ├── Trivy Image  : OS/Lib Vulnerability Scan (CRITICAL=1)│
-│    └── GHCR Push    : Publish Scanned Container Image       │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ (Pass)
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 3. Automated Staging Smoke Testing                          │
-│    ├── Pull Image   : Fetch verified package from GHCR      │
-│    ├── Spin Up      : Run unprivileged container (:8080)    │
-│    ├── Health Probe : Automated HTTP curl status code check │
-│    └── Tear Down    : Ephemeral environment cleanup         │
-└─────────────────────────────────────────────────────────────┘
+1. **Commit & Static Security Audit (SAST)**
+   * **Gitleaks:** Scans git history and commits for secrets, tokens, and credentials.
+   * **ShellCheck:** Lints Bash automation scripts for shell safety and best practices.
+   * **Semgrep:** Fast static analysis scanning for misconfigurations and vulnerabilities.
 
+2. **Container Security & Vulnerability Gate**
+   * **Trivy (IaC & Config):** Validates Dockerfile security baselines.
+   * **Hardened Docker Build:** Builds unprivileged Alpine container (Port 8080).
+   * **Trivy (Image Scan):** Enforces security gating by failing pipeline on CRITICAL CVEs.
+   * **GHCR Publishing:** Automated release to GitHub Container Registry upon passing gates.
 
-Container Hardening Highlights
+3. **Runtime Staging & Verification**
+   * **Staging Deployment:** Ephemeral deployment pulling verified artifact from GHCR.
+   * **Automated Smoke Test:** Health probe executing HTTP status checks (200 OK).
+   * **Teardown:** Clean automated teardown of staging resources.
 
-    Unprivileged Execution: Runs under custom unprivileged user context (UID 101) rather than root, mitigating container breakout risks.
+---
 
-    Minimal Base Distro: Implemented on Alpine Linux base to minimize attack surface and reduce package dependencies.
+### Security Gates & Tooling Matrix
 
-    Port Restriction: High-numbered port binding (8080) to comply with non-root Linux networking restrictions.
+| Stage | Security Control | Tool | Purpose / Policy Enforced |
+| :--- | :--- | :--- | :--- |
+| Commit Audit | Secret Leak Detection | Gitleaks | Blocks exposed API tokens, private keys, and environment variables. |
+| Linting | Script Reliability | ShellCheck | Enforces POSIX compliance, quoting, and safe Bash execution patterns. |
+| SAST | Static Analysis | Semgrep | Scans application files for dangerous patterns and insecure primitives. |
+| IaC Hardening | Config Audit | Trivy (Config) | Verifies baseline Dockerfile and deployment configurations. |
+| Vulnerability | Container Scanning | Trivy (Image) | Gates container promotion by failing pipeline on CRITICAL CVEs. |
+| Delivery | Artifact Security | GHCR | Immutable container publishing tied to commit SHA and latest tag. |
+| Runtime | Smoke & Health Probe | Curl / Docker | Validates non-root listener health (Port 8080) in isolated staging. |
 
-    Automated Upgrades: Built-in package patching layer to mitigate discovered base image CVEs during image creation.
+---
 
+### Container Hardening Highlights
 
-Repository Structure
+* **Unprivileged Execution:** Runs under unprivileged user context (`UID 101`) rather than `root`, preventing container escape.
+* **Minimal Base Distro:** Implemented on Alpine Linux base to minimize attack surface.
+* **Port Isolation:** High-numbered port binding (`8080`) complying with non-root security standards.
+* **Automated Patching:** Layered package upgrades applied during image build to resolve base image vulnerabilities.
 
+---
+
+### Repository Structure
+```text
+.
 ├── .github/
 │   └── workflows/
-│       └── devsecops-ci.yml      # Multi-stage CI/CD workflow
+│       └── devsecops-ci.yml
 ├── bash-automation/
-│   ├── log_analyzer.sh           # System auth log & brute-force parser
-│   └── system_health.sh          # System metrics monitor (CPU, RAM, Disk)
+│   ├── log_analyzer.sh
+│   └── system_health.sh
 ├── my-custom-app/
-│   ├── Dockerfile                # Hardened, non-root Nginx setup
-│   └── index.html                # Deployed lightweight web asset
-└── README.md                     # Technical architecture documentation
-
+│   ├── Dockerfile
+│   └── index.html
+└── README.md
+```
 
 Quick Start (Local Run)
 
-To run the hardened, pipeline-verified container locally from the registry:
+Pull and run the verified hardened container directly from the registry:
 
-# Pull image from GitHub Container Registry
 docker pull ghcr.io/iamalfa/devsecops-custom-app:latest
 
-# Run on unprivileged port 8080
 docker run -d --name devsecops-app -p 8080:8080 ghcr.io/iamalfa/devsecops-custom-app:latest
 
-# Test endpoint health
 curl -I http://localhost:8080
